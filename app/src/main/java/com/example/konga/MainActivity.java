@@ -2,7 +2,6 @@ package com.example.konga;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
@@ -10,7 +9,7 @@ public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private Button mButtonStart;
     private Button mButtonStop;
-    private Talkback mTalkback;
+    private AudioIntercom audioIntercom;
 
 
     @Override
@@ -24,11 +23,11 @@ public class MainActivity extends Activity {
 
             @Override
             public void onClick(View v) {
-                if(mTalkback != null ){
-                    mTalkback.stop();
+                if(audioIntercom != null ){
+                    audioIntercom.stop();
                 }
-                mTalkback = new Talkback();
-                mTalkback.start();
+                audioIntercom = new AudioIntercom();
+                audioIntercom.start();
             }
         });
 
@@ -37,8 +36,8 @@ public class MainActivity extends Activity {
 
             @Override
             public void onClick(View v) {
-                if(mTalkback != null){
-                    mTalkback.stop();
+                if(audioIntercom != null){
+                    audioIntercom.stop();
                 }
             }
         });

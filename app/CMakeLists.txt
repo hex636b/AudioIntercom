@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.4.1)
 
 add_library( # Sets the name of the library.
-             talkback
+             intercom
              SHARED
-        src/main/talkback/talkback.c)
+        src/main/intercom/intercom.c)
 
-include_directories(src/main/talkback/)
+include_directories(src/main/intercom/)
 
 add_library( ffmpeg
         SHARED
@@ -21,5 +21,5 @@ find_library(log-lib   log)
 find_library(opensles-lib OpenSLES)
 
 target_link_libraries(
-        talkback
+        intercom
         ffmpeg ${opensles-lib} ${log-lib} )
