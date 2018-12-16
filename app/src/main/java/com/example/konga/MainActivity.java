@@ -24,9 +24,10 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 if(audioIntercom != null ){
-                    audioIntercom.stop();
+                    audioIntercom.destroy();
                 }
                 audioIntercom = new AudioIntercom();
+                audioIntercom.create();
                 audioIntercom.start();
             }
         });
@@ -37,7 +38,7 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View v) {
                 if(audioIntercom != null){
-                    audioIntercom.stop();
+                    audioIntercom.destroy();
                 }
             }
         });
