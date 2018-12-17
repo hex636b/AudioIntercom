@@ -58,20 +58,20 @@ int intercom_start(JNIEnv *env, jobject jobj)
     /* Get the SL Engine Interface which is implicit */
     result = (*engineObjItf)->GetInterface(engineObjItf, SL_IID_ENGINE, (void*)&EngineItf);
     if (SL_RESULT_SUCCESS != result) {
-        loge("get SL_IID_ENGINE interface failed");
+        loge("get SL_IID_ENGINE interface failed %#X", result);
         return -1;
     }
 
     /* Get the Audio IO DEVICE CAPABILITIES interface, which is also implicit */
     result = (*engineObjItf)->GetInterface(engineObjItf, SL_IID_AUDIOIODEVICECAPABILITIES, (void*)&AudioIODeviceCapabilitiesItf);
     if (SL_RESULT_SUCCESS != result) {
-        loge("get SL_IID_AUDIOIODEVICECAPABILITIES interface failed");
+        loge("get SL_IID_AUDIOIODEVICECAPABILITIES interface failed %#X", result);
         return -1;
     }
     numInputs = MAX_NUMBER_INPUT_DEVICES;
     result = (*AudioIODeviceCapabilitiesItf)->GetAvailableAudioInputs( AudioIODeviceCapabilitiesItf, &numInputs, InputDeviceIDs);
     if (SL_RESULT_SUCCESS != result) {
-        loge("get GetAvailableAudioInputs failed");
+        loge("get GetAvailableAudioInputs failed %#X", result);
         return -1;
     }
 
@@ -80,7 +80,7 @@ int intercom_start(JNIEnv *env, jobject jobj)
     {
         result = (*AudioIODeviceCapabilitiesItf)->QueryAudioInputCapabilities(AudioIODeviceCapabilitiesItf, InputDeviceIDs[i], &AudioInputDescriptor);
         if (SL_RESULT_SUCCESS != result) {
-            loge("get QueryAudioInputCapabilities failed");
+            loge("get QueryAudioInputCapabilities fail %#X", result);
             return -1;
         }
         if((AudioInputDescriptor.deviceConnection == SL_DEVCONNECTION_ATTACHED_WIRED)&&
@@ -115,17 +115,18 @@ int intercom_start(JNIEnv *env, jobject jobj)
     /* Get the optional DEVICE VOLUME interface from the engine */
     result = (*engineObjItf)->GetInterface(engineObjItf, SL_IID_DEVICEVOLUME, (void*)&devicevolumeItf);
     if (SL_RESULT_SUCCESS != result) {
-        loge("get SL_IID_DEVICEVOLUME interface failed");
+        loge("get SL_IID_DEVICEVOLUME interface failed %#X", result);
         return -1;
     }
 
-/* Set recording volume of the microphone to -3 dB */
+    /* Set recording volume of the microphone to -3 dB */
     result = (*devicevolumeItf)->SetVolume(devicevolumeItf, mic_deviceID, -300);
     if (SL_RESULT_SUCCESS != result) {
-        loge("SetVolume failed");
+        loge("SetVolume failed %#X", result);
         return -1;
     }
-/* Setup the data source structure */
+
+    /* Setup the data source structure */
     locator_mic.locatorType = SL_DATALOCATOR_IODEVICE;
     locator_mic.deviceType = SL_IODEVICE_AUDIOINPUT;
     locator_mic.deviceID = mic_deviceID;
@@ -143,43 +144,43 @@ int intercom_start(JNIEnv *env, jobject jobj)
 /* Create audio recorder */
     result = (*EngineItf)->CreateAudioRecorder(EngineItf, &recorder, &audioSource, &audioSink, 0, iidArray, required);
     if (SL_RESULT_SUCCESS != result) {
-        loge("CreateAudioRecorder failed");
+        loge("CreateAudioRecorder failed %#X", result);
         return -1;
     }
 
 /* Realizing the recorder in synchronous mode. */
     result = (*recorder)->Realize(recorder, SL_BOOLEAN_FALSE);
     if (SL_RESULT_SUCCESS != result) {
-        loge("realize recorder failed");
+        loge("realize recorder faile %#X", result);
         return -1;
     }
 /* Get the RECORD interface - it is an implicit interface */
     result = (*recorder)->GetInterface(recorder, SL_IID_RECORD, (void*)&recordItf);
     if (SL_RESULT_SUCCESS != result) {
-        loge("get SL_IID_RECORD interface failed");
+        loge("get SL_IID_RECORD interface failed %#X", result);
         return -1;
     }
 /* Setup to receive position event callbacks */
     result = (*recordItf)->RegisterCallback(recordItf, RecordEventCallback, NULL);
     if (SL_RESULT_SUCCESS != result) {
-        loge("Register record event Callback failed");
+        loge("Register record event Callback failed %#X", result);
         return -1;
     }
 /* Set notifications to occur after every second - may be useful in updating a recording progress bar */
     result = (*recordItf)->SetPositionUpdatePeriod( recordItf, POSITION_UPDATE_PERIOD);
     if (SL_RESULT_SUCCESS != result) {
-        loge("get SL_IID_RECORD interface failed");
+        loge("get SL_IID_RECORD interface failed %#X", result);
         return -1;
     }
     result = (*recordItf)->SetCallbackEventsMask( recordItf, SL_RECORDEVENT_HEADATNEWPOS);
     if (SL_RESULT_SUCCESS != result) {
-        loge("SetCallbackEventsMask failed");
+        loge("SetCallbackEventsMask failed %#X", result);
         return -1;
     }
 /* Set the duration of the recording - 30 seconds (30,000 milliseconds) */
     result = (*recordItf)->SetDurationLimit(recordItf, 30000);
     if (SL_RESULT_SUCCESS != result) {
-        loge("SetDurationLimit failed");
+        loge("SetDurationLimit failed %#X", result);
         return -1;
     }
 
@@ -198,12 +199,12 @@ int intercom_create(JNIEnv *env, jobject jobj) {
     };
     result = slCreateEngine(&engineObjItf, 1, engineOption, 0, NULL, NULL);
     if (SL_RESULT_SUCCESS != result) {
-        loge("create engine fail");
+        loge("create engine fail %#X", result);
         return -1;
     }
     result = (*engineObjItf)->Realize(engineObjItf, SL_BOOLEAN_FALSE);
     if (SL_RESULT_SUCCESS != result) {
-        loge("realize engine fail");
+        loge("realize engine fail %#X", result);
         return -1;
     }
     logd("create engine, got object interface");
@@ -248,7 +249,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     result = (*env)->RegisterNatives(env, g_intercomClass, jniMethods,
                                      sizeof(jniMethods) / sizeof(jniMethods[0]) );
     if (JNI_OK != result) {
-        loge("register native method failed!\n");
+        loge("register native method failed %#X", result);
         return -1;
     }
 
