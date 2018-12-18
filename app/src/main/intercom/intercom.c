@@ -61,7 +61,7 @@ int intercom_start(JNIEnv *env, jobject jobj)
         loge("get SL_IID_ENGINE interface failed %#X", result);
         return -1;
     }
-
+#if 0
     /* Get the Audio IO DEVICE CAPABILITIES interface, which is also implicit */
     result = (*engineObjItf)->GetInterface(engineObjItf, SL_IID_AUDIOIODEVICECAPABILITIES, (void*)&AudioIODeviceCapabilitiesItf);
     if (SL_RESULT_SUCCESS != result) {
@@ -105,12 +105,6 @@ int intercom_start(JNIEnv *env, jobject jobj)
         loge(" ! mic_available");
         return -1;
     }
-    /* Initialize arrays required[] and iidArray[] */
-    for (i=0;i<MAX_NUMBER_INTERFACES;i++)
-    {
-        required[i] = SL_BOOLEAN_FALSE;
-        iidArray[i] = SL_IID_NULL;
-    }
 
     /* Get the optional DEVICE VOLUME interface from the engine */
     result = (*engineObjItf)->GetInterface(engineObjItf, SL_IID_DEVICEVOLUME, (void*)&devicevolumeItf);
@@ -125,7 +119,14 @@ int intercom_start(JNIEnv *env, jobject jobj)
         loge("SetVolume failed %#X", result);
         return -1;
     }
-
+#endif
+    /* Initialize arrays required[] and iidArray[] */
+    for (i=0;i<MAX_NUMBER_INTERFACES;i++)
+    {
+        required[i] = SL_BOOLEAN_FALSE;
+        iidArray[i] = SL_IID_NULL;
+    }
+#if 0
     /* Setup the data source structure */
     locator_mic.locatorType = SL_DATALOCATOR_IODEVICE;
     locator_mic.deviceType = SL_IODEVICE_AUDIOINPUT;
@@ -141,7 +142,29 @@ int intercom_start(JNIEnv *env, jobject jobj)
     mime.containerType = SL_CONTAINERTYPE_WAV;
     audioSink.pLocator = (void *)&uri;
     audioSink.pFormat = (void *)&mime;
-/* Create audio recorder */
+#endif
+    /* Setup the data source structure */
+    locator_mic.locatorType = SL_DATALOCATOR_IODEVICE;
+    locator_mic.deviceType = SL_IODEVICE_AUDIOINPUT;
+    locator_mic.deviceID = SL_DEFAULTDEVICEID_AUDIOINPUT;
+    locator_mic.device = NULL;
+    audioSource.pLocator = (void *)&locator_mic;
+    audioSource.pFormat = NULL;
+
+    SLDataLocator_BufferQueue bufferQueue ;
+    bufferQueue.locatorType = SL_DATALOCATOR_BUFFERQUEUE;
+    bufferQueue.numBuffers = 3;
+    SLDataFormat_PCM  formatPcm = {
+            .bitsPerSample = 16,
+            .channelMask = SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
+            .endianness = SL_BYTEORDER_LITTLEENDIAN,
+            .numChannels = 2,
+            .samplesPerSec = 32000,
+    };
+    audioSink.pLocator = &bufferQueue;
+    audioSink.pFormat = &formatPcm;
+
+    /* Create audio recorder */
     result = (*EngineItf)->CreateAudioRecorder(EngineItf, &recorder, &audioSource, &audioSink, 0, iidArray, required);
     if (SL_RESULT_SUCCESS != result) {
         loge("CreateAudioRecorder failed %#X", result);
