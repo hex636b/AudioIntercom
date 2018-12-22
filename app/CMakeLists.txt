@@ -5,8 +5,6 @@ include_directories(src/main/native/)
 include_directories(src/main/ffmpeg/include/)
 link_directories(src/main/jniLibs/${CMAKE_ANDROID_ARCH_ABI}/)
 
-find_library(log-lib   log)
-find_library(opensles-lib OpenSLES)
 
 add_library(
         intercom
@@ -14,4 +12,4 @@ add_library(
         src/main/native/intercom.c)
 target_link_libraries(
         intercom
-         ${opensles-lib} ${log-lib} ffmpeg)
+        log OpenSLES ffmpeg)
