@@ -45,19 +45,11 @@ int intercom_start(JNIEnv *env, jobject jobj)
     SLDataLocator_IODevice ioDevice;
     SLDataSource audioSource;
     SLDataSink audioSink;
-    SLboolean required[MAX_NUMBER_INTERFACES];
-    SLInterfaceID iidArray[MAX_NUMBER_INTERFACES];
 
     result = (*engine)->GetInterface(engine, SL_IID_ENGINE, (void*)&engineItf);
     if (SL_RESULT_SUCCESS != result) {
         MLOGE("get SL_IID_ENGINE interface failed %#X", result);
         return -1;
-    }
-
-    for (i=0;i<MAX_NUMBER_INTERFACES;i++)
-    {
-        required[i] = SL_BOOLEAN_FALSE;
-        iidArray[i] = SL_IID_NULL;
     }
 
     /* Setup the data source structure */
@@ -73,42 +65,47 @@ int intercom_start(JNIEnv *env, jobject jobj)
     bufferQueue.numBuffers = 2;
     SLDataFormat_PCM formatPcm = {
             SL_DATAFORMAT_PCM,
-            2,
+            1,
             SL_SAMPLINGRATE_44_1,
             SL_PCMSAMPLEFORMAT_FIXED_16,
             SL_PCMSAMPLEFORMAT_FIXED_16,
-            SL_SPEAKER_FRONT_LEFT|SL_SPEAKER_FRONT_RIGHT,
+            SL_SPEAKER_FRONT_CENTER,
             SL_BYTEORDER_LITTLEENDIAN
     };
     audioSink.pLocator = &bufferQueue;
     audioSink.pFormat = &formatPcm;
 
+
+    const SLInterfaceID interfaceID[1] = {SL_IID_ANDROIDSIMPLEBUFFERQUEUE};
+    const SLboolean interfaceReqired[1] = {SL_BOOLEAN_TRUE};
     /* Create audio recorder */
-    result = (*engineItf)->CreateAudioRecorder(engineItf, &recorder, &audioSource, &audioSink, 0, iidArray, required);
+    result = (*engineItf)->CreateAudioRecorder(engineItf, &recorder, &audioSource, &audioSink, 1, interfaceID, interfaceReqired);
     if (SL_RESULT_SUCCESS != result) {
         MLOGE("CreateAudioRecorder failed %#X", result);
         return -1;
     }
+    MLOGD("Create AudioRecorder");
 
-/* Realizing the recorder in synchronous mode. */
+    /* Realizing the recorder in synchronous mode. */
     result = (*recorder)->Realize(recorder, SL_BOOLEAN_FALSE);
     if (SL_RESULT_SUCCESS != result) {
         MLOGE("realize recorder faile %#X", result);
         return -1;
     }
-/* Get the RECORD interface - it is an implicit interface */
+    MLOGD("Realize AudioRecorder");
+    /* Get the RECORD interface - it is an implicit interface */
     result = (*recorder)->GetInterface(recorder, SL_IID_RECORD, (void*)&recordItf);
     if (SL_RESULT_SUCCESS != result) {
         MLOGE("get SL_IID_RECORD interface failed %#X", result);
         return -1;
     }
-/* Setup to receive position event callbacks */
+    /* Setup to receive position event callbacks */
     result = (*recordItf)->RegisterCallback(recordItf, RecordEventCallback, NULL);
     if (SL_RESULT_SUCCESS != result) {
         MLOGE("Register record event Callback failed %#X", result);
         return -1;
     }
-/* Set notifications to occur after every second - may be useful in updating a recording progress bar */
+    /* Set notifications to occur after every second - may be useful in updating a recording progress bar */
     result = (*recordItf)->SetPositionUpdatePeriod( recordItf, POSITION_UPDATE_PERIOD);
     if (SL_RESULT_SUCCESS != result) {
         MLOGE("get SL_IID_RECORD interface failed %#X", result);
@@ -119,7 +116,7 @@ int intercom_start(JNIEnv *env, jobject jobj)
         MLOGE("SetCallbackEventsMask failed %#X", result);
         return -1;
     }
-/* Set the duration of the recording - 30 seconds (30,000 milliseconds) */
+    /* Set the duration of the recording - 30 seconds (30,000 milliseconds) */
     result = (*recordItf)->SetDurationLimit(recordItf, 30000);
     if (SL_RESULT_SUCCESS != result) {
         MLOGE("SetDurationLimit failed %#X", result);
