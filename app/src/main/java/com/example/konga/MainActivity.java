@@ -14,7 +14,6 @@ public class MainActivity extends Activity {
 
     private Button mButtonStart;
     private Button mButtonStop;
-    private AudioIntercom audioIntercom;
 
 
     @Override
@@ -37,12 +36,7 @@ public class MainActivity extends Activity {
                     return;
                 }
 
-                if(audioIntercom != null ){
-                    audioIntercom.destroy();
-                }
-                audioIntercom = new AudioIntercom();
-                audioIntercom.create();
-                audioIntercom.start();
+                AudioIntercom.start();
             }
         });
 
@@ -51,9 +45,8 @@ public class MainActivity extends Activity {
 
             @Override
             public void onClick(View v) {
-                if(audioIntercom != null){
-                    audioIntercom.destroy();
-                }
+
+                AudioIntercom.stop();
             }
         });
 

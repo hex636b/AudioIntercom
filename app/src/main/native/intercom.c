@@ -16,32 +16,47 @@
 #define MLOGI(fmt, arg...)  __android_log_print(ANDROID_LOG_INFO,  TAG, "%s:%u "fmt, __FUNCTION__, __LINE__,  ##arg)
 #define MLOGE(fmt, arg...)  __android_log_print(ANDROID_LOG_ERROR, TAG, "%s:%u "fmt, __FUNCTION__, __LINE__,  ##arg)
 
-#define MAX_NUMBER_INTERFACES 5
-#define MAX_NUMBER_INPUT_DEVICES 3
-#define POSITION_UPDATE_PERIOD 1000 /* 1 sec */
 
-static jclass g_intercomClass;
-static jfieldID g_nativeInstanceID;
+SLObjectItf engine;
+SLEngineItf engineItf;
 
-void RecordEventCallback(SLRecordItf caller, void * pContext, SLuint32 recordEvent)
+SLObjectItf recorder;
+SLRecordItf recordItf;
+
+SLDataLocator_AndroidSimpleBufferQueue  bufferQueue ;
+SLAndroidSimpleBufferQueueItf bufferQueueItf;
+
+char buffer[256] ;
+
+static void BufferQueueCallback(SLAndroidSimpleBufferQueueItf bq, void *context)
 {
-    MLOGD("recordEvent %u", recordEvent);
+    SLresult result;
+    MLOGD("enqueue");
+    (*bq)->Clear(bq);
+    result = (*bufferQueueItf)->Enqueue(bufferQueueItf, buffer, sizeof(buffer));
 }
 
-int intercom_start(JNIEnv *env, jobject jobj)
+int intercom_start(JNIEnv *env, jclass clazz)
 {
-    SLObjectItf engine = (*env)->GetLongField(env, jobj, g_nativeInstanceID);
-    if (NULL == engine) {
-        MLOGE("get engine fail. instanceID: %lld", g_nativeInstanceID);
+    SLresult  result;
+    SLEngineOption engineOption[] = {
+            {(SLuint32) SL_ENGINEOPTION_THREADSAFE, (SLuint32) SL_BOOLEAN_TRUE},
+    };
+    result = slCreateEngine(&engine, 1, engineOption, 0, NULL, NULL);
+    if (SL_RESULT_SUCCESS != result) {
+        MLOGE("create engine fail %#X", result);
         return -1;
     }
+    MLOGI("slCreateEngine");
 
-    SLObjectItf recorder;
-    SLRecordItf recordItf;
-    SLEngineItf engineItf;
+    result = (*engine)->Realize(engine, SL_BOOLEAN_FALSE);
+    if (SL_RESULT_SUCCESS != result) {
+        MLOGE("realize engine fail %#X", result);
+        return -1;
+    }
+    MLOGI("realize engine");
 
-    int i;
-    SLresult result;
+
     SLDataLocator_IODevice ioDevice;
     SLDataSource audioSource;
     SLDataSink audioSink;
@@ -60,7 +75,7 @@ int intercom_start(JNIEnv *env, jobject jobj)
     audioSource.pLocator = (void *)&ioDevice;
     audioSource.pFormat = NULL;
 
-    SLDataLocator_AndroidSimpleBufferQueue  bufferQueue ;
+
     bufferQueue.locatorType = SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE;
     bufferQueue.numBuffers = 2;
     SLDataFormat_PCM formatPcm = {
@@ -99,69 +114,41 @@ int intercom_start(JNIEnv *env, jobject jobj)
         MLOGE("get SL_IID_RECORD interface failed %#X", result);
         return -1;
     }
-    /* Setup to receive position event callbacks */
-    result = (*recordItf)->RegisterCallback(recordItf, RecordEventCallback, NULL);
+
+    result = (*recorder)->GetInterface(recorder, SL_IID_ANDROIDSIMPLEBUFFERQUEUE, &bufferQueueItf);
+    if (SL_RESULT_SUCCESS != result) {
+        MLOGE("get SL_IID_ANDROIDSIMPLEBUFFERQUEUE interface failed %#X", result);
+        return -1;
+    }
+
+    result = (*bufferQueueItf)->RegisterCallback(bufferQueueItf, BufferQueueCallback, NULL);
     if (SL_RESULT_SUCCESS != result) {
         MLOGE("Register record event Callback failed %#X", result);
         return -1;
     }
-    /* Set notifications to occur after every second - may be useful in updating a recording progress bar */
-    result = (*recordItf)->SetPositionUpdatePeriod( recordItf, POSITION_UPDATE_PERIOD);
-    if (SL_RESULT_SUCCESS != result) {
-        MLOGE("get SL_IID_RECORD interface failed %#X", result);
-        return -1;
-    }
-    result = (*recordItf)->SetCallbackEventsMask( recordItf, SL_RECORDEVENT_HEADATNEWPOS);
-    if (SL_RESULT_SUCCESS != result) {
-        MLOGE("SetCallbackEventsMask failed %#X", result);
-        return -1;
-    }
-    /* Set the duration of the recording - 30 seconds (30,000 milliseconds) */
-    result = (*recordItf)->SetDurationLimit(recordItf, 30000);
-    if (SL_RESULT_SUCCESS != result) {
-        MLOGE("SetDurationLimit failed %#X", result);
-        return -1;
-    }
+    MLOGD("register BufferQueueCallback");
+
 
     /* Record the audio */
     result = (*recordItf)->SetRecordState(recordItf,SL_RECORDSTATE_RECORDING);
-    /* Destroy the recorder object */
-    (*recorder)->Destroy(recorder);
+    MLOGD("set RECORDING");
+
+    MLOGD("First enqueue");
+    result = (*bufferQueueItf)->Enqueue(bufferQueueItf, buffer, sizeof(buffer));
 }
 
-int intercom_create(JNIEnv *env, jobject jobj) {
-    SLresult result;
-    SLObjectItf engine;
 
-    SLEngineOption engineOption[] = {
-            {(SLuint32) SL_ENGINEOPTION_THREADSAFE, (SLuint32) SL_BOOLEAN_TRUE},
-    };
-    result = slCreateEngine(&engine, 1, engineOption, 0, NULL, NULL);
-    if (SL_RESULT_SUCCESS != result) {
-        MLOGE("create engine fail %#X", result);
-        return -1;
+int intercom_stop(JNIEnv *env, jclass clazz) {
+
+    if (NULL != recorder) {
+        MLOGD("destroy recorder");
+        (*recorder)->Destroy(recorder);
+        recorder = NULL;
     }
-    MLOGI("slCreateEngine");
-
-    result = (*engine)->Realize(engine, SL_BOOLEAN_FALSE);
-    if (SL_RESULT_SUCCESS != result) {
-        MLOGE("realize engine fail %#X", result);
-        return -1;
-    }
-    MLOGI("realize engine");
-
-    (*env)->SetLongField(env, jobj, g_nativeInstanceID, engine);
-
-    return 0;
-}
-
-int intercom_destroy(JNIEnv *env, jobject jobj) {
-
-    SLObjectItf engine = (*env)->GetLongField(env, jobj, g_nativeInstanceID);
     if (NULL != engine) {
         MLOGD("destroy engine");
         (*engine)->Destroy(engine);
-        (*env)->SetLongField(env, jobj, g_nativeInstanceID, NULL);
+        engine = NULL;
     }
     return 0;
 }
@@ -175,19 +162,17 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return -1;
     }
 
-    g_intercomClass = (*env)->FindClass(env, "com/example/konga/AudioIntercom");
-    if (g_intercomClass == NULL) {
+    jclass intercomClass = (*env)->FindClass(env, "com/example/konga/AudioIntercom");
+    if (NULL == intercomClass) {
         MLOGE("cannot find class AudioIntercom");
         return -1;
     }
-    g_nativeInstanceID = (*env)->GetFieldID(env, g_intercomClass, "nativeInstance", "J");
 
     JNINativeMethod jniMethods[] = {
-            {"create", "()I", (void *) intercom_create},
             {"start",  "()I", (void *) intercom_start},
-            {"destroy",  "()I", (void *) intercom_destroy},
+            {"stop",  "()I", (void *) intercom_stop},
     };
-    result = (*env)->RegisterNatives(env, g_intercomClass, jniMethods,
+    result = (*env)->RegisterNatives(env, intercomClass, jniMethods,
                                      sizeof(jniMethods) / sizeof(jniMethods[0]) );
     if (JNI_OK != result) {
         MLOGE("register native method failed %#X", result);
