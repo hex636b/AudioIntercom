@@ -1,6 +1,6 @@
-package com.example.konga;
+package com.github.hex636b;
 
-public class AudioIntercom {
+public class AudioRecord {
 
     public static native int start();
     public static native int stop();

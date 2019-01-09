@@ -1,4 +1,4 @@
-package com.example.konga;
+package com.github.hex636b;
 
 import android.app.Application;
 

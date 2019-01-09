@@ -162,9 +162,9 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return -1;
     }
 
-    jclass intercomClass = (*env)->FindClass(env, "com/example/konga/AudioIntercom");
+    jclass intercomClass = (*env)->FindClass(env, "com/github/hex636b/AudioRecord");
     if (NULL == intercomClass) {
-        MLOGE("cannot find class AudioIntercom");
+        MLOGE("cannot find class AudioRecord");
         return -1;
     }
 

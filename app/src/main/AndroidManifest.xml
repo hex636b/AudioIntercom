@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.konga">
+    package="com.github.hex636b">
 
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
@@ -13,8 +13,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        android:name="com.example.konga.ApplicationIntercom">
-        <activity android:name=".MainActivity">
+        android:name="com.github.hex636b.ApplicationIntercom">
+        <activity android:name="com.github.hex636b.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
